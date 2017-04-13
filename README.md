@@ -9,7 +9,7 @@
 - **Flask** as web framework in Python
 
 ### Architecture
-
+![alt text][Arch]
 ### Installation
 
 #### Kafka
@@ -132,3 +132,4 @@ Now we have finish the whole set-up work and in the next days, we can divide int
 [kafka_2.11-0.10.2.0]:<https://kafka.apache.org/downloads>
 [spark-streaming-kafka-0-8-assembly_2.11-2.1.0.jar]:<https://mvnrepository.com/artifact/org.apache.spark/spark-streaming-kafka-0-8-assembly_2.11/2.1.0.>
 [Redis 3.2]:<https://redis.io/download>
+[Arch]:<https://github.com/kailichen/StreamProcessing/blob/master/resources/architecture.png>
