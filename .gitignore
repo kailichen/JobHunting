@@ -1,5 +1,8 @@
-
+# ignore file created by mac osx
 .DS_Store
+# ignore all credential files
+*.json
+*.txt
 # Created by https://www.gitignore.io/api/jetbrains
 
 ### JetBrains ###
