@@ -30,6 +30,12 @@ Installation:
 
 #### Redis
 
+Easy Installation:
+
+```sh
+brew install redis
+```
+
 Installation:
 
 1. Download [Redis 3.2]
@@ -107,7 +113,7 @@ To check the data you just pull in, open a new terminal and type in,
 #### start Spark server
 
 ```sh
-spark-submit sparkSubmit.py.
+spark-submit sparkSubmit.py
 ```
 Now sparkSubmit.py send to tweet data to redis "twitterchannel" channel
 
@@ -120,7 +126,7 @@ python tweetFetcher.py
 #### start Flask
 
 ```sh
-python applcation.py
+python application.py
 ```
 ## Work plan
 Now we have finish the whole set-up work and in the next days, we can divide into two parts. I hope @Yulong can polish the "webapp" part. And we need to do discuss more on what kinds of data should we presents on web. And I and @Kaili can focus on analysis. And the short-term goal for this week's presentation is that we can display the live job posting on geomap. Besides, to simplify the work of set-up, i.e, open redis or kafka, for mac user, it is recommended to write a shell script to make things easy.
