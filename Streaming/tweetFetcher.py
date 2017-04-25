@@ -20,7 +20,9 @@ from kafka import SimpleProducer, KafkaClient
 """reload intepretor, add credential path"""
 reload(sys)
 sys.setdefaultencoding('UTF8')
+sys.path.append('../Utils')
 
+from spark_utils import getGeo
 
 """import credentials from root/AppCreds"""
 with open(os.path.dirname(sys.path[0])+'/AppCreds/TwitterAcct.json','r') as TwitterAcct:
@@ -58,10 +60,28 @@ class TweetStreamListener(StreamListener):
                 if ('lang' in tweetJson):
                     if tweetJson['place'] is not None:
                         if (tweetJson['place']['country_code'] == 'US') & (tweetJson['lang'] == 'en'):
+
                             print ('fetching No. '+ str(self.count) +' Tweet')
+
+                            data_url = tweetJson['entities']['urls'][0]['url']
+                            data_text = tweetJson['text']
+                            data_geo = None#getGeo(data_text)
+                            if not data_geo:
+                                print('*'*80)
+                                print('geo not in text, use geo_tag instead')
+                                print('*'*80)
+                                data_geo = tweetJson['geo']
+
+                            senddata = {}
+                            senddata['url'] = data_url
+                            senddata['text'] = data_text
+                            senddata['geo'] = data_geo
+                            
+                            #print ('fetching No. '+ str(self.count) +' Tweet')
                             self.backoff /= 2
                             self.count += 1
-                            self.producer.send_messages(self.topic, data.encode('utf8'))
+                            self.producer.send_messages(self.topic, json.dumps(senddata).encode('utf8'))
+                        
         except Exception as error:
             print "kafka raise exception, printing out traceback..."
             print error

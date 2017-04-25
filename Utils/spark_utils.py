@@ -1,11 +1,11 @@
 import re
 import redis
 import json
-from pymongo import MongoClient
+#from pymongo import MongoClient
 import googlemaps
 
 state_list=["AL","AK","AZ","AR", "CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"]
-with open('./data/config.json') as config_data:
+with open('../AppCreds/TwitterAcct.json','r') as config_data:
     googlemaps_key = json.load(config_data)['googlemaps_key']
 
 def sendToRedis(tup):
@@ -48,7 +48,7 @@ def getGeo(tweet):
                 location = city + ", " + state
                 result = gmaps.geocode(location)
                 if result:
-                    geo = result[0]['geometry']['location']
+                    geo['geo'] = result[0]['geometry']['location']
                     return geo
                 else:
                     city = str(words[i-x]) + " " + city
