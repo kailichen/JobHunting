@@ -15,12 +15,12 @@ def publishToRedis(tup):
     r = redis.StrictRedis(connection_pool=pool)
     r.publish("twitterchannel", tweet)
 
-def predict(time, rdd):
+def predict(rdd):
 
     global a
-    print a
-
-    count = str(rdd.collect())
+    print(a)
+    print("this is rdd data, ", rdd)
+    count = str(rdd)
 
     tmp = count.replace("[", "")
     tmp = tmp.replace("]", "")
@@ -84,8 +84,8 @@ def predict(time, rdd):
     mean_post = beta / (alpha + beta)
     sd_post = math.sqrt(alpha * beta / (((alpha + beta) * (alpha + beta)) * (alpha + beta + 1)))
     print("~~~~~~~~~~~~~")
-    print mean_post
-    print sd_post
+    print(mean_post)
+    print(sd_post)
 
     if mean_post >= 0.5:
         up = 1
@@ -94,9 +94,13 @@ def predict(time, rdd):
 
     a += cur
 
-    f = open("/Users/Kaili/Desktop/tweetTest.txt", 'a')
-    f.write(str(time))
-    f.write(',')
+    pool = redis.ConnectionPool(host='127.0.0.1', port=6379, db=0)
+    r = redis.StrictRedis(connection_pool=pool)
+    r.publish("twitterchannel", str(list)+','+str(mean_post))
+
+    f = open("../tweetTest1.txt", 'a')
+    #f.write(str(time))
+    #f.write(',')
     f.write(str(list))
     # f.write(str(cur))
     f.write(',')
@@ -171,7 +175,7 @@ if __name__ == '__main__':
     # count_this_batch.union(count_windowed).foreachRDD(saveFile)
     count_0.union(count_1).union(count_2).union(count_3).union(count_4).union(count_5).union(count_6).union(count_7).union(count_8). \
         union(count_9).union(count_10).union(count_11).union(count_12).union(count_13).union(count_14).union(count_15). \
-        union(count_16).union(count_17).union(count_18).union(count_19).foreachRDD(predict)
+        union(count_16).union(count_17).union(count_18).union(count_19).foreachRDD(lambda rdd:rdd.foreach(predict) )
     # Write tweet author counts to stdout
     # count_values_this_batch.pprint(5)
     # count_values_windowed.pprint(5)

@@ -2,7 +2,7 @@
 .DS_Store
 # ignore all credential files
 *.json
-*.txt
+#*.txt
 # Created by https://www.gitignore.io/api/jetbrains
 
 ### JetBrains ###
