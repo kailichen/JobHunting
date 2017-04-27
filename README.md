@@ -9,7 +9,7 @@
 - **Flask** as web framework in Python
 
 ### Architecture
-![alt text][Arch]
+![alt text](https://cldup.com/qoPbmkcl9t.png)
 ### Installation
 
 #### Kafka
