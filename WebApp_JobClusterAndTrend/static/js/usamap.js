@@ -10,8 +10,8 @@ var map = new Datamap({
   },
 
   fills: {
-  'Probability': '#FFFFFF',
-  defaultFill: '#FFFFFF'
+  'Probability': '#306596',
+  defaultFill: '#306596'
 },
 data:{
   "AZ": {
