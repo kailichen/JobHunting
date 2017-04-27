@@ -3,6 +3,7 @@
 # ignore all credential files
 *.json
 #*.txt
+*.crc
 # Created by https://www.gitignore.io/api/jetbrains
 
 ### JetBrains ###
