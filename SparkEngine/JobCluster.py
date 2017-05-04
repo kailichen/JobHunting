@@ -10,6 +10,9 @@ from pyspark.streaming.kafka import KafkaUtils
 
 from stemming.porter2 import stem
 import operator
+import numpy as np
+import collections
+from stemming.porter2 import stem
 
 def publishToRedis(tup):
     state = tup[0]
@@ -32,10 +35,12 @@ def saveToFile(rdd):
     f.close()
     print(rdd)
 
+def updateTweetsCount(new_val, running_counts):
+    return sum(new_val) + (running_counts or 0)
 
-def updateStatesKws(new_features, feature_count):
+def updateStatesKws(new_features_stream, feature_count):
     
-    with open('../data/staticwordcluster.txt', 'r') as wordcluster_text:
+    with open('../data/staticwordcluster_new.txt', 'r') as wordcluster_text:
         word_cluster = json.load(wordcluster_text)
 
     if feature_count is None:
@@ -43,13 +48,81 @@ def updateStatesKws(new_features, feature_count):
         for key in word_cluster:
             feature_count[key] = 0
 
-    if new_features != []:
-        for feature in new_features[0]:
+    for new_features in new_features_stream:
+        for feature in new_features:
             for key in word_cluster:
                 if feature in word_cluster[key]:
                     feature_count[key] += 1
     
     return feature_count
+
+def updateWordCluster(new_feature_pool, cluster):
+
+    if cluster is None:
+        with open('../data/staticwordcluster_new.txt', 'r') as wordcluster_text:
+            word_cluster0 = json.load(wordcluster_text)
+        d = collections.defaultdict(dict)
+        cluster = [word_cluster0, d]
+
+    word_cluster = cluster[0]
+    candidate_cluster = cluster[1]
+    keys = []
+    for val in word_cluster.itervalues():
+        keys = keys + val
+    candidate_keys = candidate_cluster.keys()
+
+    # update the candidate pool
+    
+    #if new_feature_pool != []:
+    for new_features in new_feature_pool:
+        for new_feature0 in new_features:
+            new_feature = stem(new_feature0)
+            if new_feature not in keys:
+                if new_feature in candidate_keys:
+                    candidate_cluster[new_feature]['count'] += 1 
+                    for w in new_features:
+                        w = stem(w)
+                        for k,v in word_cluster.iteritems():
+                            if w in v:
+                                if k in candidate_cluster[new_feature].keys():
+                                    candidate_cluster[new_feature][k] += 1
+                                else:
+                                    candidate_cluster[new_feature][k] = 1
+                else:
+                    candidate_cluster[new_feature]['count'] = 1 
+                    for w in new_features:
+                        w = stem(w)
+                        for k,v in word_cluster.iteritems():
+                            if w in v:
+                                candidate_cluster[new_feature][k] = 1        
+    
+    # update the word pool
+    delete_words = []
+    for key, word in candidate_cluster.iteritems():
+        count = word['count']
+        fsum = sum([word[k] for k in word if k!='count'])
+        if count > 100:
+            if float(fsum)/count < 0.2:
+                word_cluster[key] = key
+                delete_words.append(key)
+            else:
+                word_temp = word
+                del word_temp['count']
+                maxc = max(word_temp)
+                if float(word_temp[maxc])/count > 0.2:
+                    word_cluster[maxc].append(key)
+                    delete_words.append(key)
+                
+    # clear candidate pool
+    for word in delete_words:
+        del candidate_cluster[word]
+    
+    with open('../data/staticwordcluster_new.txt', 'w') as f:
+        json.dump(word_cluster, f)
+    
+    newcluster = [word_cluster, candidate_cluster]
+
+    return newcluster
 
 def getState(tweet):
     state_list=["AL","AK","AZ","AR", "CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"]
@@ -82,11 +155,26 @@ def getFeature(tweet):
     line = text.split(None)
     wordsline = [''.join(pattern.split(x)).lower() for x in line if x.startswith('#')]
     features = [stem(x) for x in wordsline if x!='']
+    features = [x for x in features if x!='job' and x!='hire']
 
     return features
 
 def getTopCluster(feature_count):
     return sorted(feature_count.items(), key=lambda x: x[1], reverse=True)
+
+def getNewFeature(data):
+    newfeatures = []
+    for x in data:
+        if x not in ['job']:
+            newfeatures.append([x,data])
+    return newfeatures
+
+def getWordList(data):
+    word_list = []
+    for key, val in data.iteritems():
+        word_list = word_list + val
+
+    return word_list
 
 if __name__ == '__main__':
     sc = SparkContext(appName="PythonTwitterStreaming")
@@ -99,11 +187,18 @@ if __name__ == '__main__':
     text = tweets.map(lambda x: json.loads(x)['text'] )
     geo = tweets.map(lambda x: json.loads(x)['geo'] )
 
-    statescounts = text.map(lambda x: (getState(x), getFeature(x)) ).window(10,10).reduceByKey(lambda x, y: x + y)
+    tweetscount = text.map(lambda x: ('counts', 1)).updateStateByKey(updateTweetsCount)
+
+    features = text.map(lambda x: getFeature(x))
+    feature_pool = features.map(lambda x: ('feature_pool', x)).window(20,20)
+    word_cluster = feature_pool.updateStateByKey(updateWordCluster)
+
+    statescounts = text.map(lambda x: (getState(x), getFeature(x)) ).window(5,5).reduceByKey(lambda x, y: x + y)
     stateskws = statescounts.updateStateByKey(updateStatesKws)
     statestop = stateskws.map(lambda x: (x[0], getTopCluster(x[1])))
 
     statestop.foreachRDD(lambda rdd: rdd.foreach(publishToRedis) )
+    word_cluster.pprint()
 
     ssc.start()
     ssc.awaitTermination()
