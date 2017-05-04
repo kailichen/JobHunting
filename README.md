@@ -79,6 +79,7 @@ $ mv redis.conf /etc
 - Real-time job Cluster by states of US
   - spark-job: ```JobCluster.py```
   - WebApp: ```WebApp_JobClusterAndTrend/```
+  - another improved version: ```JobClusterWithMerge.py```, in this code, spark will try to merge some new feature words from the stream data. It use the same WebApp file as the previous one.
   
 - Real-time job Trending in US
   - spark-job: ```JobTrend.py```
